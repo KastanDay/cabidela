@@ -207,7 +207,7 @@ export class Cabidela {
           absorvErrors: true,
           deferredApplyDefaults: true,
         });
-        rounds += matches;
+        rounds++;
         if (breakCondition && breakCondition(rounds)) break;
         defaultsCallbacks.push(...needle.defaultsCallbacks);
         needle.defaultsCallbacks = [];
@@ -247,9 +247,7 @@ export class Cabidela {
     if (needle.schema.hasOwnProperty("oneOf")) {
       const rounds = this.parseList(needle.schema.oneOf, needle, (r: number) => r !== 1);
       if (rounds !== 1) {
-        if (needle.path.length == 0) {
-          this.throw(`oneOf at '${pathToString(needle.path)}' not met, ${rounds} matches`, needle);
-        }
+        this.throw(`oneOf at '${pathToString(needle.path)}' not met, ${rounds} matches found`, needle);
         return 0;
       }
       return 1;

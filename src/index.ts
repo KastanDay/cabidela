@@ -139,7 +139,7 @@ export class Cabidela {
     if (needle.schema.hasOwnProperty("maxProperties")) {
       if (Object.keys(needle.payload).length > needle.schema.maxProperties) {
         this.throw(
-          `maxProperties at '${pathToString(needle.path)}' is ${needle.schema.minProperties}, got ${Object.keys(needle.payload).length}`,
+          `maxProperties at '${pathToString(needle.path)}' is ${needle.schema.maxProperties}, got ${Object.keys(needle.payload).length}`,
           needle,
         );
       }

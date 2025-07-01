@@ -3,6 +3,7 @@ import { resolvePayload, pathToString, traverseSchema } from "./helpers";
 export type CabidelaOptions = {
   applyDefaults?: boolean;
   useMerge?: boolean;
+  usePatch?: boolean;
   errorMessages?: boolean;
   fullErrors?: boolean;
   subSchemas?: Array<any>;
@@ -30,6 +31,8 @@ export class Cabidela {
     this.options = {
       fullErrors: true,
       subSchemas: [],
+      useMerge: false,
+      usePatch: false,
       applyDefaults: false,
       errorMessages: false,
       ...(options || {}),
@@ -43,7 +46,7 @@ export class Cabidela {
         this.addSchema(subSchema, false);
       }
     }
-    if (this.options.useMerge || (this.options.subSchemas as []).length > 0) {
+    if (this.options.useMerge || this.options.usePatch || (this.options.subSchemas as []).length > 0) {
       traverseSchema(this.options, this.definitions, this.schema);
     }
   }

@@ -82,6 +82,18 @@ const getJsonPointerParent = (document: any, pointer: string) => {
   return { parent: getJsonPointer(document, parentPointer), token };
 };
 
+const setObjectProperty = (object: any, property: string, value: any) =>
+  Object.defineProperty(object, property, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
+
+const assignObjectProperties = (target: any, source: any) => {
+  for (const key of Object.keys(source)) setObjectProperty(target, key, source[key]);
+};
+
 const addJsonPointer = (document: any, pointer: string, value: any): any => {
   const { parent, token } = getJsonPointerParent(document, pointer);
   if (token === undefined) return value;
@@ -92,12 +104,7 @@ const addJsonPointer = (document: any, pointer: string, value: any): any => {
       parent.splice(arrayIndex(token, parent.length, true), 0, value);
     }
   } else if (parent !== null && typeof parent === "object") {
-    Object.defineProperty(parent, token, {
-      value,
-      writable: true,
-      enumerable: true,
-      configurable: true,
-    });
+    setObjectProperty(parent, token, value);
   } else {
     throw new Error(`JSON Pointer '${pointer}' parent is not a container`);
   }
@@ -123,12 +130,7 @@ const replaceJsonPointer = (document: any, pointer: string, value: any): any => 
   if (Array.isArray(parent)) {
     parent[arrayIndex(token, parent.length, false)] = value;
   } else if (parent !== null && typeof parent === "object" && Object.hasOwn(parent, token)) {
-    Object.defineProperty(parent, token, {
-      value,
-      writable: true,
-      enumerable: true,
-      configurable: true,
-    });
+    setObjectProperty(parent, token, value);
   } else {
     throw new Error(`JSON Pointer '${pointer}' does not exist`);
   }
@@ -210,7 +212,7 @@ export const traverseSchema = (options: CabidelaOptions, definitions: any, obj: 
             } else {
               // root level
               hits++;
-              Object.assign(obj, merge);
+              assignObjectProperties(obj, merge);
               delete obj[key];
             }
           }
@@ -220,7 +222,7 @@ export const traverseSchema = (options: CabidelaOptions, definitions: any, obj: 
               cb(patch);
             } else {
               hits++;
-              Object.assign(obj, patch);
+              assignObjectProperties(obj, patch);
               delete obj[key];
             }
           }
@@ -234,7 +236,7 @@ export const traverseSchema = (options: CabidelaOptions, definitions: any, obj: 
               } else {
                 // root level
                 hits++;
-                Object.assign(obj, resolvedObject);
+                assignObjectProperties(obj, resolvedObject);
                 delete obj[key];
               }
             } else {

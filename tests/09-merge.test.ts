@@ -232,4 +232,21 @@ describe("$patch", () => {
       expect(Object.getPrototypeOf(properties)).toBe(Object.prototype);
     },
   );
+
+  test.each(["__proto__", "constructor", "prototype"])("adds %s as an own root member", (property) => {
+    const cabidela = new Cabidela(
+      {
+        $patch: {
+          source: {},
+          with: [{ op: "add", path: `/${property}`, value: { type: "string" } }],
+        },
+      },
+      { usePatch: true },
+    );
+    const schema = cabidela.getSchema();
+
+    expect(Object.hasOwn(schema, property)).toBe(true);
+    expect(schema[property]).toStrictEqual({ type: "string" });
+    expect(Object.getPrototypeOf(schema)).toBe(Object.prototype);
+  });
 });

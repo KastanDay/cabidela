@@ -74,3 +74,69 @@ describe("$merge", () => {
     });
   });
 });
+
+describe("$patch", () => {
+  test.skipIf(process.env.AJV)("applies JSON Patch operations", () => {
+    let schema = {
+      $patch: {
+        source: {
+          type: "object",
+          properties: {
+            effort: { type: "string", enum: ["low", "medium", "high"] },
+            obsolete: { type: "boolean" },
+          },
+          required: ["effort"],
+        },
+        with: [
+          { op: "replace", path: "/properties/effort/enum", value: ["low", "medium", "high", "max", null] },
+          { op: "add", path: "/properties/effort/default", value: "max" },
+          { op: "remove", path: "/properties/obsolete" },
+          { op: "copy", from: "/properties/effort", path: "/properties/copied_effort" },
+          { op: "move", from: "/required/0", path: "/required/0" },
+          { op: "test", path: "/properties/effort/default", value: "max" },
+        ],
+      },
+    };
+    const cabidela = new FakeCabidela(schema, { usePatch: true });
+    schema = cabidela.getSchema();
+    expect(schema).toStrictEqual({
+      type: "object",
+      properties: {
+        effort: { type: "string", enum: ["low", "medium", "high", "max", null], default: "max" },
+        copied_effort: { type: "string", enum: ["low", "medium", "high", "max", null], default: "max" },
+      },
+      required: ["effort"],
+    });
+  });
+
+  test.skipIf(process.env.AJV)("resolves references before applying a patch", () => {
+    let schema = {
+      $patch: {
+        source: { $ref: "$defs#/input" },
+        with: [{ op: "replace", path: "/properties/effort/enum", value: ["low", "high"] }],
+      },
+      $defs: {
+        input: {
+          type: "object",
+          properties: { effort: { type: "string", enum: ["low", "medium", "high"] } },
+        },
+      },
+    };
+    const cabidela = new FakeCabidela(schema, { usePatch: true });
+    schema = cabidela.getSchema();
+    expect(schema).toStrictEqual({
+      type: "object",
+      properties: { effort: { type: "string", enum: ["low", "high"] } },
+    });
+  });
+
+  test.skipIf(process.env.AJV)("rejects a failed test operation", () => {
+    const schema = {
+      $patch: {
+        source: { type: "string" },
+        with: [{ op: "test", path: "/type", value: "number" }],
+      },
+    };
+    expect(() => new FakeCabidela(schema, { usePatch: true })).toThrowError("JSON patch test failed at '/type'");
+  });
+});

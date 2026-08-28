@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-08-28
+
+### Added
+
+- Added opt-in `$patch` support using JSON Patch operations
+
 ## [0.2.4] - 2025-03-24
 
 ### Changed

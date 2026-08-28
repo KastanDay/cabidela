@@ -72,6 +72,7 @@ Cabidela takes a JSON-Schema and optional configuration flags:
 - `errorMessages`: boolean - If true, the validator will use custom `errorMessage` messages from the schema. Default is false.
 - `fullErrors`: boolean - If true, the validator will be more verbose when throwing errors for complex schemas (example: anyOf, oneOf's), set to false for shorter exceptions. Default is true.
 - `useMerge`: boolean - Set to true if you want to use the `$merge` keyword. Default is false. See below for more information.
+- `usePatch`: boolean - Set to true if you want to use the `$patch` keyword. Default is false. See below for more information.
 - `subSchemas`: any[] - An optional array of sub-schemas that can be used with `$id` and `$ref`. See below for more information.
 
 Returns a validation object.
@@ -251,7 +252,7 @@ cabidela.validate({
 });
 ```
 
-## Combined schemas and $merge
+## Combined schemas, $merge and $patch
 
 The standard way of combining and extending schemas is by using the [`allOf`](https://json-schema.org/understanding-json-schema/reference/combining#allOf) (AND), [`anyOf`](https://json-schema.org/understanding-json-schema/reference/combining#anyOf) (OR), [`oneOf`](https://json-schema.org/understanding-json-schema/reference/combining#oneOf) (XOR) and [`not`](https://json-schema.org/understanding-json-schema/reference/combining#not) keywords, all supported by this library.
 
@@ -298,6 +299,29 @@ new Cabidela(schema, { useMerge: true });
 ```
 
 You can combine `$merge` with `$id` and `$ref` keywords, which get resolved first, for even more flexibility.
+
+Cabidela also supports `$patch` using [JSON Patch (RFC 6902)](https://datatracker.ietf.org/doc/html/rfc6902). This is useful when an existing value must be replaced or removed rather than merged, such as narrowing an enum:
+
+```json
+{
+  "$patch": {
+    "source": { "$ref": "input" },
+    "with": [
+      {
+        "op": "replace",
+        "path": "/properties/reasoning_effort/enum",
+        "value": ["low", "high", "max"]
+      }
+    ]
+  }
+}
+```
+
+Set `usePatch` to true to enable the keyword:
+
+```js
+new Cabidela(schema, { usePatch: true });
+```
 
 ## Custom errors
 

@@ -139,4 +139,14 @@ describe("$patch", () => {
     };
     expect(() => new FakeCabidela(schema, { usePatch: true })).toThrowError("JSON patch test failed at '/type'");
   });
+
+  test.skipIf(process.env.AJV).each([
+    { $patch: { with: [] } },
+    { $patch: { source: { type: "string" }, with: [{ op: "remove", path: "" }] } },
+    { $patch: { source: { type: "string" }, with: [{ op: "replace", path: "", value: false }] } },
+  ])("rejects a patch that does not produce an object schema", (schema) => {
+    expect(() => new FakeCabidela(schema, { usePatch: true })).toThrowError(
+      "$patch result must be an object schema",
+    );
+  });
 });

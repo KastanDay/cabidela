@@ -175,6 +175,9 @@ const applyJsonPatch = (source: any, operations: JsonPatchOperation[]): any => {
         throw new Error(`Unsupported JSON patch operation '${operation.op}'`);
     }
   }
+  if (document === null || typeof document !== "object" || Array.isArray(document)) {
+    throw new Error("$patch result must be an object schema");
+  }
   return document;
 };
 

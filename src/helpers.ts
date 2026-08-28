@@ -92,7 +92,12 @@ const addJsonPointer = (document: any, pointer: string, value: any): any => {
       parent.splice(arrayIndex(token, parent.length, true), 0, value);
     }
   } else if (parent !== null && typeof parent === "object") {
-    parent[token] = value;
+    Object.defineProperty(parent, token, {
+      value,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
   } else {
     throw new Error(`JSON Pointer '${pointer}' parent is not a container`);
   }
@@ -118,7 +123,12 @@ const replaceJsonPointer = (document: any, pointer: string, value: any): any => 
   if (Array.isArray(parent)) {
     parent[arrayIndex(token, parent.length, false)] = value;
   } else if (parent !== null && typeof parent === "object" && Object.hasOwn(parent, token)) {
-    parent[token] = value;
+    Object.defineProperty(parent, token, {
+      value,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
   } else {
     throw new Error(`JSON Pointer '${pointer}' does not exist`);
   }

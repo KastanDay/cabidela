@@ -178,4 +178,58 @@ describe("$patch", () => {
     expect(cabidela.getSchema()).toStrictEqual({ type: "string", enum: ["low", "high", "max"] });
     expect(() => cabidela.validate("max")).not.toThrow();
   });
+
+  test("retains the active schema when setSchema preparation fails", () => {
+    const cabidela = new Cabidela({ type: "string" }, { usePatch: true });
+
+    expect(() =>
+      cabidela.setSchema({
+        $patch: {
+          source: { type: "object" },
+          with: [{ op: "remove", path: "/missing" }],
+        },
+      }),
+    ).toThrowError("JSON Pointer '/missing' does not exist");
+
+    expect(cabidela.getSchema()).toStrictEqual({ type: "string" });
+    expect(() => cabidela.validate(42)).toThrow();
+  });
+
+  test("does not retain an invalid added schema", () => {
+    const cabidela = new Cabidela({ type: "string" });
+
+    expect(() => cabidela.addSchema({ type: "object" })).toThrowError("subSchemas need $id");
+    expect(() => cabidela.setSchema({ type: "number" })).not.toThrow();
+    expect(() => cabidela.validate(42)).not.toThrow();
+  });
+
+  test("does not retain invalid options", () => {
+    const cabidela = new Cabidela({ type: "string" });
+
+    expect(() => cabidela.setOptions({ subSchemas: [{ type: "object" }] })).toThrowError(
+      "subSchemas need $id",
+    );
+    expect(() => cabidela.setSchema({ type: "number" })).not.toThrow();
+    expect(() => cabidela.validate(42)).not.toThrow();
+  });
+
+  test.each(["__proto__", "constructor", "prototype"])(
+    "adds %s as an own JSON Pointer member",
+    (property) => {
+      const cabidela = new Cabidela(
+        {
+          $patch: {
+            source: { type: "object", properties: {} },
+            with: [{ op: "add", path: `/properties/${property}`, value: { type: "string" } }],
+          },
+        },
+        { usePatch: true },
+      );
+      const properties = cabidela.getSchema().properties;
+
+      expect(Object.hasOwn(properties, property)).toBe(true);
+      expect(properties[property]).toStrictEqual({ type: "string" });
+      expect(Object.getPrototypeOf(properties)).toBe(Object.prototype);
+    },
+  );
 });

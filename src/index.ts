@@ -29,33 +29,46 @@ export class Cabidela {
   private addedSchemas: Array<any> = [];
 
   constructor(schema: any, options?: CabidelaOptions) {
-    this.schema = schema;
-    this.options = {
+    const nextOptions = {
       fullErrors: true,
       subSchemas: [],
       applyDefaults: false,
       errorMessages: false,
       ...(options || {}),
     };
-    this.prepareSchema(true);
+    const prepared = this.prepareNewSchema(schema, nextOptions, []);
+    this.schema = this.replaceSchema(schema, prepared.schema);
+    this.options = nextOptions;
+    this.definitions = prepared.definitions;
+    this.localDefinitions = prepared.localDefinitions;
   }
 
   setSchema(schema: any) {
-    this.schema = schema;
-    this.prepareSchema(true);
+    const prepared = this.prepareNewSchema(schema, this.options, this.addedSchemas);
+    this.schema = this.replaceSchema(schema, prepared.schema);
+    this.definitions = prepared.definitions;
+    this.localDefinitions = prepared.localDefinitions;
   }
 
   addSchema(subSchema: any, combine: boolean = true) {
-    this.addedSchemas.push(subSchema);
-    this.registerSchema(subSchema);
-    if (combine == true) traverseSchema(this.options, this.definitions, this.schema);
+    const addedSchemas = [...this.addedSchemas, structuredClone(subSchema)];
+    const prepared = this.prepareSchema(
+      this.schema,
+      this.options,
+      this.localDefinitions,
+      addedSchemas,
+      combine,
+    );
+    this.replaceSchema(this.schema, prepared.schema);
+    this.definitions = prepared.definitions;
+    this.addedSchemas = addedSchemas;
   }
 
-  private registerSchema(subSchema: any) {
+  private registerSchema(definitions: any, subSchema: any) {
     if (subSchema.hasOwnProperty("$id")) {
       const url = URL.parse(subSchema["$id"]);
       if (url) {
-        this.definitions[url.pathname.split("/").slice(-1)[0]] = subSchema;
+        definitions[url.pathname.split("/").slice(-1)[0]] = structuredClone(subSchema);
       } else {
         throw new Error(
           "subSchemas need a valid retrieval URI $id https://json-schema.org/understanding-json-schema/structuring#retrieval-uri",
@@ -66,18 +79,42 @@ export class Cabidela {
     }
   }
 
-  private prepareSchema(resetLocalDefinitions: boolean) {
-    if (resetLocalDefinitions) {
-      this.localDefinitions = this.schema["$defs"];
-      delete this.schema["$defs"];
+  private prepareNewSchema(schema: any, options: CabidelaOptions, addedSchemas: Array<any>) {
+    const candidate = structuredClone(schema);
+    const localDefinitions = candidate["$defs"];
+    delete candidate["$defs"];
+    return this.prepareSchema(candidate, options, localDefinitions, addedSchemas, true);
+  }
+
+  private replaceSchema(target: any, source: any) {
+    for (const key of Object.keys(target)) delete target[key];
+    for (const key of Object.keys(source)) {
+      Object.defineProperty(target, key, {
+        value: source[key],
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
     }
-    this.definitions = {};
-    if (this.localDefinitions !== undefined) this.definitions["$defs"] = this.localDefinitions;
-    for (const subSchema of this.options.subSchemas as []) this.registerSchema(subSchema);
-    for (const subSchema of this.addedSchemas) this.registerSchema(subSchema);
-    if (this.options.useMerge || this.options.usePatch || (this.options.subSchemas as []).length > 0) {
-      traverseSchema(this.options, this.definitions, this.schema);
+    return target;
+  }
+
+  private prepareSchema(
+    schema: any,
+    options: CabidelaOptions,
+    localDefinitions: any,
+    addedSchemas: Array<any>,
+    combine: boolean,
+  ) {
+    const candidate = structuredClone(schema);
+    const definitions: any = {};
+    if (localDefinitions !== undefined) definitions["$defs"] = structuredClone(localDefinitions);
+    for (const subSchema of options.subSchemas as []) this.registerSchema(definitions, subSchema);
+    for (const subSchema of addedSchemas) this.registerSchema(definitions, subSchema);
+    if (combine && (options.useMerge || options.usePatch || (options.subSchemas as []).length > 0)) {
+      traverseSchema(options, definitions, candidate);
     }
+    return { schema: candidate, definitions, localDefinitions };
   }
 
   getSchema() {
@@ -85,8 +122,17 @@ export class Cabidela {
   }
 
   setOptions(options: CabidelaOptions) {
-    this.options = { ...this.options, ...options };
-    this.prepareSchema(false);
+    const nextOptions = { ...this.options, ...options };
+    const prepared = this.prepareSchema(
+      this.schema,
+      nextOptions,
+      this.localDefinitions,
+      this.addedSchemas,
+      true,
+    );
+    this.replaceSchema(this.schema, prepared.schema);
+    this.options = nextOptions;
+    this.definitions = prepared.definitions;
   }
 
   throw(message: string, needle: SchemaNavigation) {

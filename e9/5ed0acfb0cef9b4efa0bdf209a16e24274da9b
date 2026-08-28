@@ -1,0 +1,19 @@
+src/helpers.ts
+  s_95511b80f01a15::t_7b043c7a60d848 95-100,126-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "e95ed0acfb0cef9b4efa0bdf209a16e24274da9b",
+  "prompts": {},
+  "sessions": {
+    "s_95511b80f01a15": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fb5bc612dffej916H86gby6YTb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Kastan Day <kastanvday@gmail.com>"
+    }
+  }
+}

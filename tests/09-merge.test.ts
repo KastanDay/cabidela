@@ -1,4 +1,5 @@
 import { expect, describe, test } from "vitest";
+import { Cabidela } from "../src";
 import { FakeCabidela } from "./lib/fake-cabidela";
 
 describe("$merge", () => {
@@ -148,5 +149,33 @@ describe("$patch", () => {
     expect(() => new FakeCabidela(schema, { usePatch: true })).toThrowError(
       "$patch result must be an object schema",
     );
+  });
+
+  test("resolves patches installed through setSchema", () => {
+    const cabidela = new Cabidela({ type: "string" }, { usePatch: true });
+
+    cabidela.setSchema({
+      $patch: {
+        source: { type: "string", enum: ["low", "high"] },
+        with: [{ op: "add", path: "/enum/-", value: "max" }],
+      },
+    });
+
+    expect(cabidela.getSchema()).toStrictEqual({ type: "string", enum: ["low", "high", "max"] });
+    expect(() => cabidela.validate("max")).not.toThrow();
+  });
+
+  test("resolves existing patches when setOptions enables them", () => {
+    const cabidela = new Cabidela({
+      $patch: {
+        source: { type: "string", enum: ["low", "high"] },
+        with: [{ op: "add", path: "/enum/-", value: "max" }],
+      },
+    });
+
+    cabidela.setOptions({ usePatch: true });
+
+    expect(cabidela.getSchema()).toStrictEqual({ type: "string", enum: ["low", "high", "max"] });
+    expect(() => cabidela.validate("max")).not.toThrow();
   });
 });

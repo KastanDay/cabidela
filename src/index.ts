@@ -25,6 +25,8 @@ export class Cabidela {
   private schema: any;
   private options: CabidelaOptions;
   private definitions: any = {};
+  private localDefinitions: any;
+  private addedSchemas: Array<any> = [];
 
   constructor(schema: any, options?: CabidelaOptions) {
     this.schema = schema;
@@ -35,25 +37,21 @@ export class Cabidela {
       errorMessages: false,
       ...(options || {}),
     };
-    if (this.schema.hasOwnProperty("$defs")) {
-      this.definitions["$defs"] = this.schema["$defs"];
-      delete this.schema["$defs"];
-    }
-    if ((this.options.subSchemas as []).length > 0) {
-      for (const subSchema of this.options.subSchemas as []) {
-        this.addSchema(subSchema, false);
-      }
-    }
-    if (this.options.useMerge || this.options.usePatch || (this.options.subSchemas as []).length > 0) {
-      traverseSchema(this.options, this.definitions, this.schema);
-    }
+    this.prepareSchema(true);
   }
 
   setSchema(schema: any) {
     this.schema = schema;
+    this.prepareSchema(true);
   }
 
   addSchema(subSchema: any, combine: boolean = true) {
+    this.addedSchemas.push(subSchema);
+    this.registerSchema(subSchema);
+    if (combine == true) traverseSchema(this.options, this.definitions, this.schema);
+  }
+
+  private registerSchema(subSchema: any) {
     if (subSchema.hasOwnProperty("$id")) {
       const url = URL.parse(subSchema["$id"]);
       if (url) {
@@ -66,7 +64,20 @@ export class Cabidela {
     } else {
       throw new Error("subSchemas need $id https://json-schema.org/understanding-json-schema/structuring#id");
     }
-    if (combine == true) traverseSchema(this.options, this.definitions, this.schema);
+  }
+
+  private prepareSchema(resetLocalDefinitions: boolean) {
+    if (resetLocalDefinitions) {
+      this.localDefinitions = this.schema["$defs"];
+      delete this.schema["$defs"];
+    }
+    this.definitions = {};
+    if (this.localDefinitions !== undefined) this.definitions["$defs"] = this.localDefinitions;
+    for (const subSchema of this.options.subSchemas as []) this.registerSchema(subSchema);
+    for (const subSchema of this.addedSchemas) this.registerSchema(subSchema);
+    if (this.options.useMerge || this.options.usePatch || (this.options.subSchemas as []).length > 0) {
+      traverseSchema(this.options, this.definitions, this.schema);
+    }
   }
 
   getSchema() {
@@ -75,6 +86,7 @@ export class Cabidela {
 
   setOptions(options: CabidelaOptions) {
     this.options = { ...this.options, ...options };
+    this.prepareSchema(false);
   }
 
   throw(message: string, needle: SchemaNavigation) {

@@ -1,0 +1,19 @@
+src/helpers.ts
+  s_dfceabf84cc7b4::t_a1e93654115470 38-180,183,188,204-213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "66d9fa84fe721bb8e7e1c464f4b9cc6ae0c264ce",
+  "prompts": {},
+  "sessions": {
+    "s_dfceabf84cc7b4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fb6359341ffes6nSWjWbP29sf1",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Kastan Day <kastanvday@gmail.com>"
+    }
+  }
+}
